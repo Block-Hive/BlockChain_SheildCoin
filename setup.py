@@ -14,7 +14,7 @@ setup(
     description="A robust implementation of a blockchain system in Python",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/dhruvldrp/python-blockchain",
+    url="https://github.com/dhruvldrp9/BlockChain",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 4 - Beta",

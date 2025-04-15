@@ -83,6 +83,8 @@ class Blockchain:
         
         # Add block to chain
         self.chain.append(new_block)
+
+        #Todo : Lock Transaction pool at that time.
         
         # Clear transaction pool
         self.transaction_pool.clear_transactions()
