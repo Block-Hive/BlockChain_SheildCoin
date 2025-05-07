@@ -94,7 +94,7 @@ This will start a bootstrap node that creates the initial blockchain with a gene
 ### Joining an Existing Network
 
 ```bash
-python -m blockchain.api.app --host 0.0.0.0 --port 5001 --dht-port 6001 --bootstrap 192.168.1.100:6000
+python -m blockchain.api.app --host 0.0.0.0 --port 5001 --dht-port 6001 --bootstrap 127.0.0.1:6000
 ```
 
 Replace `192.168.1.100:6000` with the IP and DHT port of a running bootstrap node.
