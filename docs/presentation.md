@@ -235,9 +235,4 @@ graph LR
 ---
 
 ## Questions & Discussion
-Thank you for your attention!
-
-**Contact:**
-- GitHub: [Your GitHub]
-- Email: [Your Email]
-- Documentation: [Your Docs Link] 
+Thank you for your attention! 
