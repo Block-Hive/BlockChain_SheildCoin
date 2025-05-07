@@ -17,9 +17,9 @@ style: |
 ## Secure Blockchain Platform
 ### Team Backend
 **Team Members:**
-- [Your Name] - Lead Developer
-- [Team Member 2] - Core Developer
-- [Team Member 3] - Security Expert
+- Dhruvkumar Patel - Lead Developer
+- Siddhant Desai - Core Developer
+- Aditya Gidh - Security Expert
 
 ---
 
