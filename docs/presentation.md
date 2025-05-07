@@ -18,8 +18,6 @@ style: |
 ### Team Backend
 **Team Members:**
 - Dhruvkumar Patel - Lead Developer
-- Siddhant Desai - Core Developer
-- Aditya Gidh - Security Expert
 
 ---
 
