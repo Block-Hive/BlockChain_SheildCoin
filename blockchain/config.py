@@ -20,10 +20,12 @@ DEFAULT_PORT = int(os.getenv('DEFAULT_PORT', 5000))
 MAX_PEERS = int(os.getenv('MAX_PEERS', 50))
 PEER_DISCOVERY_INTERVAL = 60
 CHAIN_SYNC_INTERVAL = 300
-BOOTSTRAP_NODES = [
-    {'host': 'localhost', 'port': 5001},
-    {'host': 'localhost', 'port': 5002}
-]
+
+# DHT settings
+DHT_BOOTSTRAP_NODES = os.getenv('DHT_BOOTSTRAP_NODES', '').split(',')
+DHT_REPLICATION_FACTOR = int(os.getenv('DHT_REPLICATION_FACTOR', 3))
+DHT_SYNC_INTERVAL = int(os.getenv('DHT_SYNC_INTERVAL', 30))
+DHT_STORAGE_PATH = os.getenv('DHT_STORAGE_PATH', 'dht_storage')
 
 # Transaction settings
 MAX_TRANSACTION_POOL_SIZE = 1000
@@ -65,7 +67,8 @@ API_CONFIG = {
     'port': API_PORT,
     'debug': API_DEBUG,
     'threaded': API_THREADED,
-    'rate_limit': API_RATE_LIMIT
+    'rate_limit': API_RATE_LIMIT,
+    'bootstrap_nodes': DHT_BOOTSTRAP_NODES
 }
 
 # Logging settings
@@ -82,6 +85,13 @@ class MessageType:
     CHAIN_RESPONSE = "chain_response"
     PEER_DISCOVERY = "peer_discovery"
     PEER_RESPONSE = "peer_response"
+    # DHT message types
+    STORE_BLOCK = "store_block"
+    STORE_TRANSACTION = "store_transaction"
+    GET_BLOCK = "get_block"
+    GET_TRANSACTION = "get_transaction"
+    REQUEST_DATA = "request_data"
+    DATA_RESPONSE = "data_response"
 
 # Error messages
 class ErrorMessages:
@@ -96,4 +106,7 @@ class ErrorMessages:
     API_ERROR = "API error"
     BLOCKCHAIN_NOT_FOUND = "Blockchain not found"
     WALLET_NOT_FOUND = "Wallet not found"
-    PEER_NOT_FOUND = "Peer not found" 
+    PEER_NOT_FOUND = "Peer not found"
+    DHT_ERROR = "DHT error"
+    DHT_STORAGE_ERROR = "DHT storage error"
+    DHT_SYNC_ERROR = "DHT synchronization error" 

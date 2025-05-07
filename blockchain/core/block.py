@@ -1,79 +1,133 @@
+import time
 import hashlib
 import json
-import time
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from .transaction import Transaction
+import logging
+
+logger = logging.getLogger(__name__)
 
 class Block:
     """
-    Represents a single block in the blockchain.
-    Each block contains a list of transactions, timestamp, previous block's hash,
-    and a proof of work (nonce).
+    Represents a block in the blockchain.
+    Contains transactions, hash, previous hash, and proof-of-work.
     """
     
-    def __init__(self, index: int, transactions: List[Transaction], previous_hash: str, timestamp: float = None):
+    def __init__(self, index: int, transactions: List[Transaction], previous_hash: str, 
+                timestamp: Optional[float] = None, nonce: int = 0, hash: Optional[str] = None):
         """
         Initialize a new block.
         
         Args:
-            index: The block's position in the blockchain
-            transactions: List of transactions to be included in the block
-            previous_hash: Hash of the previous block in the chain
-            timestamp: Block creation timestamp (defaults to current time)
+            index: Block index in the chain
+            transactions: List of transactions
+            previous_hash: Hash of the previous block
+            timestamp: Optional timestamp (defaults to current time)
+            nonce: Nonce for proof-of-work (defaults to 0)
+            hash: Block hash (calculated if not provided)
         """
         self.index = index
         self.transactions = transactions
-        self.timestamp = timestamp or time.time()
         self.previous_hash = previous_hash
-        self.nonce = 0
-        self.hash = self.calculate_hash()
+        self.timestamp = timestamp or time.time()
+        self.nonce = nonce
+        self.hash = hash or self.calculate_hash()
+        
+        # Validate inputs
+        if not isinstance(index, int) or index < 0:
+            raise ValueError("Block index must be a non-negative integer")
+            
+        if not isinstance(transactions, list):
+            raise ValueError("Transactions must be a list")
+            
+        if not isinstance(previous_hash, str) or len(previous_hash) != 64:
+            raise ValueError("Previous hash must be a 64-character string")
     
     def calculate_hash(self) -> str:
         """
-        Calculate the hash of the block using SHA-256.
-        The hash includes all block data except the current hash.
+        Calculate the hash of the block.
         
         Returns:
-            str: The calculated hash of the block
+            Hex-encoded SHA-256 hash of the block data
         """
-        block_string = json.dumps({
+        # Create a sorted and deterministic data structure for hash calculation
+        block_data = {
             'index': self.index,
-            'transactions': [tx.to_dict() for tx in self.transactions],
             'timestamp': self.timestamp,
             'previous_hash': self.previous_hash,
-            'nonce': self.nonce
-        }, sort_keys=True)
+            'nonce': self.nonce,
+            'transactions': [tx.to_dict() for tx in self.transactions]
+        }
         
+        # Convert to JSON with deterministic ordering
+        block_string = json.dumps(block_data, sort_keys=True)
+        
+        # Calculate hash using SHA-256
         return hashlib.sha256(block_string.encode()).hexdigest()
     
     def mine_block(self, difficulty: int) -> None:
         """
-        Mine the block by finding a nonce that produces a hash with the required
-        number of leading zeros (difficulty).
+        Mine the block by finding a hash with a specified number of leading zeros.
         
         Args:
             difficulty: Number of leading zeros required in the hash
         """
+        if difficulty < 1:
+            logger.warning(f"Mining with low difficulty: {difficulty}")
+        elif difficulty > 8:
+            logger.warning(f"Mining with very high difficulty: {difficulty}")
+            
         target = '0' * difficulty
+        max_nonce = 2**32  # Prevent infinite loops
         
-        while self.hash[:difficulty] != target:
-            self.nonce += 1
+        start_time = time.time()
+        for i in range(max_nonce):
+            self.nonce = i
             self.hash = self.calculate_hash()
+            
+            if self.hash.startswith(target):
+                mining_time = time.time() - start_time
+                logger.info(f"Block mined in {mining_time:.2f} seconds with nonce {self.nonce}")
+                return
+                
+        # If we reach here, we couldn't find a valid hash
+        raise RuntimeError(f"Failed to mine block after {max_nonce} attempts")
     
     def is_valid(self, difficulty: int) -> bool:
         """
-        Verify if the block's hash meets the difficulty requirement.
+        Verify that the block is valid:
+        1. The hash matches the block data
+        2. The hash has the required number of leading zeros
         
         Args:
             difficulty: Number of leading zeros required in the hash
             
         Returns:
-            bool: True if the block is valid, False otherwise
+            True if the block is valid, False otherwise
         """
-        return (
-            self.hash[:difficulty] == '0' * difficulty and
-            self.hash == self.calculate_hash()
-        )
+        # Check that hash is correctly calculated
+        calculated_hash = self.calculate_hash()
+        if calculated_hash != self.hash:
+            logger.warning(f"Block hash mismatch: {self.hash} vs {calculated_hash}")
+            return False
+            
+        # Check proof-of-work
+        target = '0' * difficulty
+        if not self.hash.startswith(target):
+            logger.warning(f"Block hash does not meet difficulty requirement: {self.hash}")
+            return False
+            
+        # Validate transactions
+        for tx in self.transactions:
+            if not isinstance(tx, Transaction):
+                logger.warning("Block contains an invalid transaction type")
+                return False
+                
+            if not tx.verify():
+                logger.warning(f"Block contains an invalid transaction: {tx}")
+                return False
+                
+        return True
     
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -84,11 +138,11 @@ class Block:
         """
         return {
             'index': self.index,
-            'transactions': [tx.to_dict() for tx in self.transactions],
             'timestamp': self.timestamp,
             'previous_hash': self.previous_hash,
+            'hash': self.hash,
             'nonce': self.nonce,
-            'hash': self.hash
+            'transactions': [tx.to_dict() for tx in self.transactions]
         }
     
     @classmethod
@@ -102,12 +156,35 @@ class Block:
         Returns:
             Block: New Block instance
         """
-        block = cls(
+        # Validate required fields
+        required_fields = ['index', 'timestamp', 'previous_hash', 'hash', 'nonce', 'transactions']
+        for field in required_fields:
+            if field not in data:
+                raise ValueError(f"Missing required field: {field}")
+        
+        # Convert transaction dictionaries to Transaction objects
+        transactions = []
+        for tx_data in data['transactions']:
+            try:
+                tx = Transaction.from_dict(tx_data)
+                transactions.append(tx)
+            except ValueError as e:
+                logger.warning(f"Skipping invalid transaction: {e}")
+        
+        # Create and return the block
+        return cls(
             index=data['index'],
-            transactions=[Transaction.from_dict(tx) for tx in data['transactions']],
+            timestamp=data['timestamp'],
             previous_hash=data['previous_hash'],
-            timestamp=data['timestamp']
+            nonce=data['nonce'],
+            hash=data['hash'],
+            transactions=transactions
         )
-        block.nonce = data['nonce']
-        block.hash = data['hash']
-        return block 
+    
+    def __str__(self) -> str:
+        """Return a string representation of the block."""
+        return (
+            f"Block(index={self.index}, hash={self.hash[:10]}..., "
+            f"previous_hash={self.previous_hash[:10]}..., "
+            f"transactions={len(self.transactions)}, nonce={self.nonce})"
+        ) 

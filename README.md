@@ -1,225 +1,172 @@
-# Python Blockchain Implementation
+# BlockChain - Secure Distributed Ledger System
 
-A robust implementation of a blockchain system in Python with PostgreSQL persistence, cryptographic security, and a RESTful API.
+A complete, secure, and production-ready blockchain implementation featuring transaction processing, proof-of-work consensus, wallet management, and a distributed peer-to-peer network.
 
-## 📋 Table of Contents
-- [Features](#features)
-- [Project Structure](#project-structure)
-- [Architecture](#architecture)
-- [Setup](#setup)
-- [Usage](#usage)
-- [API Documentation](#api-documentation)
-- [Development](#development)
-- [Testing](#testing)
-- [License](#license)
+## Features
 
-## ✨ Features
+- **Complete Blockchain Implementation**
+  - Proof-of-Work consensus algorithm
+  - Dynamic difficulty adjustment
+  - Secure transaction validation
+  - Mining rewards and fee structures
 
-- 🔗 Blockchain core implementation with proof-of-work consensus
-- 💰 Cryptocurrency transactions with RSA encryption
-- 💼 Wallet management with public/private key pairs
-- 📦 PostgreSQL database for persistent storage
-- 🌐 RESTful API for blockchain interaction
-- 🔒 Cryptographic security with RSA and SHA-256
-- 🔄 Peer-to-peer network support
-- 📊 Transaction pool management
-- 🧪 Comprehensive test suite
+- **Cryptographic Security**
+  - Strong RSA-3072 based wallet encryption
+  - SHA-256 and SHA3-256 hashing for blockchain integrity
+  - Digital signatures for transaction verification
+  - Password-protected wallet storage
 
-## 📁 Project Structure
+- **Distributed Network**
+  - Peer-to-peer architecture via DHT (Distributed Hash Table)
+  - Automatic node discovery and synchronization
+  - Chain validation and conflict resolution
+  - Automatic bootstrap node detection
 
-```
-blockchain/
-├── api/
-│   ├── __init__.py
-│   └── app.py              # Flask API implementation
-├── core/
-│   ├── __init__.py
-│   ├── block.py           # Block implementation
-│   ├── blockchain.py      # Blockchain implementation
-│   ├── transaction.py     # Transaction implementation
-│   └── transaction_pool.py # Transaction pool management
-├── crypto/
-│   ├── __init__.py
-│   └── wallet.py          # Wallet and cryptographic operations
-├── utils/
-│   ├── __init__.py
-│   ├── database.py        # PostgreSQL database operations
-│   ├── initializer.py     # System initialization
-│   └── storage.py         # Data persistence
-├── config.py              # Configuration settings
-└── __init__.py
+- **RESTful API**
+  - Full blockchain management API
+  - Wallet creation and management
+  - Transaction creation and verification
+  - Block mining capabilities
+  - Node status monitoring
 
-tests/
-├── __init__.py
-├── test_api.py           # API tests
-├── test_block.py         # Block tests
-├── test_blockchain.py    # Blockchain tests
-├── test_transaction.py   # Transaction tests
-├── test_wallet.py        # Wallet tests
-└── example_test.py       # Example usage tests
+- **Database Persistence**
+  - PostgreSQL database integration
+  - Transaction pool persistence
+  - Chain and wallet storage
+  - Connection pooling and failure recovery
 
-docs/
-├── architecture.md       # Detailed architecture documentation
-└── diagrams/            # Architecture and workflow diagrams
+## System Requirements
+
+- Python 3.8+
+- PostgreSQL 12+
+- Network connectivity for distributed operations
+- 2GB+ RAM recommended for mining operations
+
+## Installation
+
+### Setting up the environment
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/BlockChain.git
+cd BlockChain
+
+# Create and activate a virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
 ```
 
-## 🏗 Architecture
+### Database Setup
 
-### System Components
+1. Create a PostgreSQL database:
 
-```mermaid
-graph TD
-    A[Client] --> B[REST API]
-    B --> C[Blockchain Core]
-    C --> D[Transaction Pool]
-    C --> E[Wallet Management]
-    C --> F[PostgreSQL DB]
-    C --> G[P2P Network]
+```sql
+CREATE DATABASE blockchain;
+CREATE USER blockchain_user WITH PASSWORD 'your_password';
+GRANT ALL PRIVILEGES ON DATABASE blockchain TO blockchain_user;
 ```
 
-### Transaction Flow
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant API
-    participant Pool
-    participant Blockchain
-    participant DB
-
-    User->>API: Create Transaction
-    API->>Pool: Add to Pool
-    Pool->>API: Confirm
-    API->>User: Transaction ID
-    User->>API: Mine Block
-    API->>Blockchain: Mine Pending
-    Blockchain->>DB: Save Block
-    Blockchain->>Pool: Clear Transactions
-    API->>User: Block Details
-```
-
-## 🚀 Setup
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/python-blockchain.git
-   cd python-blockchain
-   ```
-
-2. Create and activate virtual environment:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # Linux/Mac
-   # or
-   .\venv\Scripts\activate  # Windows
-   ```
-
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. Set up PostgreSQL:
-   ```bash
-   # Create database
-   createdb blockchain
-   
-   # Set environment variables
-   cp .env.example .env
-   # Edit .env with your database credentials
-   ```
-
-5. Initialize the system:
-   ```bash
-   python -m blockchain.api.app
-   ```
-
-## 📚 API Documentation
-
-### Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/chain` | GET | Get the full blockchain |
-| `/transactions/pending` | GET | Get pending transactions |
-| `/transactions/new` | POST | Create a new transaction |
-| `/mine` | GET | Mine a new block |
-| `/nodes/register` | POST | Register a new node |
-| `/nodes/resolve` | GET | Resolve blockchain conflicts |
-| `/wallet/new` | GET | Create a new wallet |
-| `/wallet/balance` | GET | Get wallet balance |
-
-### Example Usage
+2. Configure the database connection in `blockchain/config.py`:
 
 ```python
-import requests
-
-# Create a new wallet
-response = requests.get('http://localhost:5000/wallet/new')
-wallet = response.json()
-
-# Create a transaction
-transaction = {
-    'sender': wallet['address'],
-    'recipient': 'recipient_address',
-    'amount': 10.0,
-    'signature': '...'  # Sign with wallet's private key
+DATABASE_CONFIG = {
+    'host': 'localhost',
+    'port': 5432,
+    'database': 'blockchain',
+    'user': 'blockchain_user',
+    'password': 'your_password'
 }
-response = requests.post('http://localhost:5000/transactions/new', json=transaction)
-
-# Mine a new block
-response = requests.get(f'http://localhost:5000/mine?address={wallet["address"]}')
 ```
 
-## 💻 Development
+## Running the Blockchain
 
-1. Install development dependencies:
-   ```bash
-   pip install -r requirements-dev.txt
-   ```
+### Starting a Bootstrap Node
 
-2. Run tests:
-   ```bash
-   pytest
-   ```
-
-3. Check code style:
-   ```bash
-   flake8
-   black .
-   ```
-
-## 🧪 Testing
-
-The project includes comprehensive tests:
-
-- Unit tests for all core components
-- Integration tests for API endpoints
-- Example usage tests
-- Performance benchmarks
-
-Run tests with:
 ```bash
-pytest
+python -m blockchain.api.app --host 0.0.0.0 --port 5000 --dht-port 6000
 ```
 
-Generate coverage report:
+This will start a bootstrap node that creates the initial blockchain with a genesis block.
+
+### Joining an Existing Network
+
 ```bash
-pytest --cov=blockchain tests/
+python -m blockchain.api.app --host 0.0.0.0 --port 5001 --dht-port 6001 --bootstrap 192.168.1.100:6000
 ```
 
-## 📄 License
+Replace `192.168.1.100:6000` with the IP and DHT port of a running bootstrap node.
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+## Basic Usage
 
-## 🤝 Contributing
+Once your node is running, you can interact with the blockchain using the API:
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+### Creating a Wallet
 
-## 📞 Support
+```bash
+curl http://localhost:5000/wallet/new
+```
 
-For support, please open an issue in the GitHub repository or contact the maintainers. 
+This will return a new wallet containing:
+- Public address
+- Public key
+- Private key (store securely!)
+
+### Creating a Transaction
+
+```bash
+curl -X POST http://localhost:5000/transactions/new \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sender": "PUBLIC_KEY_HERE", 
+    "recipient": "RECIPIENT_ADDRESS_HERE", 
+    "amount": 10,
+    "signature": "SIGNATURE_HERE"
+  }'
+```
+
+### Mining a Block
+
+```bash
+curl http://localhost:5000/mine?address=YOUR_WALLET_ADDRESS
+```
+
+This will mine a new block with pending transactions and credit mining rewards to the specified address.
+
+### Viewing the Blockchain
+
+```bash
+curl http://localhost:5000/chain
+```
+
+## Security Considerations
+
+- Always encrypt and securely store wallet private keys
+- Run nodes on secure, firewalled servers
+- Consider implementing additional authentication for production use
+- Monitor for suspicious transaction patterns
+- Regularly backup blockchain database
+
+## Documentation
+
+For more detailed documentation, see:
+
+- [API Documentation](docs/API.md) - Complete API reference
+- [Security Guide](docs/SECURITY.md) - Security features and best practices
+- [Architecture Overview](docs/ARCHITECTURE.md) - System architecture and design
+- [Advanced Configuration](docs/CONFIGURATION.md) - Advanced configuration options
+- [Development Guide](docs/DEVELOPMENT.md) - Guide for developers extending the system
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Contact
+
+For questions or support, please contact [your-email@example.com](mailto:your-email@example.com)
